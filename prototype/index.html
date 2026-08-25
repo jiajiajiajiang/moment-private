@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f7f5f2">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://*.supabase.co wss://*.supabase.co; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'; upgrade-insecure-requests">
+  <title>片刻 Moment — 页面原型</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600&family=Noto+Serif+SC:wght@500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="prototype-note">可点击页面原型 · 数据仅用于演示</div>
+
+  <div class="app-shell">
+    <aside class="side-nav" aria-label="主导航">
+      <a class="brand" href="#home" data-route="home" aria-label="片刻首页">
+        <span class="brand-mark">刻</span>
+        <span><strong>片刻</strong><small>Moment</small></span>
+      </a>
+      <nav>
+        <button class="nav-item active" data-route="home"><span>⌂</span>首页</button>
+        <button class="nav-item" data-route="timeline"><span>◷</span>时间</button>
+        <button class="nav-item" data-route="memories"><span>◇</span>记忆</button>
+        <button class="nav-item" data-route="profile"><span>○</span>我的</button>
+      </nav>
+      <button class="new-memory side-new" data-route="create"><span>＋</span>记录此刻</button>
+      <div class="privacy-hint"><span>⌁</span><p><strong>你的私人空间</strong><br>所有内容默认仅自己可见</p></div>
+    </aside>
+
+    <main id="app" tabindex="-1">
+      <section class="screen auth-screen" data-screen="login">
+        <div class="liquid-scene" aria-hidden="true"><div class="liquid-orb orb-one"></div><div class="liquid-orb orb-two"></div><div class="liquid-orb orb-three"></div></div>
+        <div class="login-brand"><span class="brand-mark">刻</span><span><strong>片刻</strong><small>MOMENT</small></span></div>
+        <div class="glass-login">
+          <p class="eyebrow">PRIVATE MEMORY SPACE</p><h1>欢迎回来</h1><p class="login-lead">在只属于你的地方，继续记录生活。</p>
+          <form id="passwordLoginForm">
+            <label class="password-field"><span>⌁</span><input id="loginPassword" type="password" autocomplete="current-password" placeholder="请输入访问密码" aria-label="访问密码"><button class="password-toggle" type="button" data-toggle-password="loginPassword" aria-label="显示密码">◉</button></label>
+            <label class="consent"><input id="privacyConsent" type="checkbox"><span>我已阅读并同意<a href="terms.html" target="_blank">《用户协议》</a>和<a href="privacy.html" target="_blank">《隐私政策》</a></span></label>
+            <button class="login-submit" type="submit">安全登录</button>
+          </form>
+          <div class="login-security"><span>⌁</span><p><strong>默认私密</strong><br>未经你的主动授权，任何人都无法查看你的记忆。</p></div>
+        </div>
+        <p class="login-foot">你的记忆，始终属于你。</p>
+      </section>
+
+      <section class="screen active" data-screen="home">
+        <header class="page-head home-head">
+          <div><p class="eyebrow">Tuesday · 25 August</p><h1>片刻</h1><p>记录一些，不想忘记的瞬间。</p></div>
+          <button class="round-icon" aria-label="搜索" data-route="memories">⌕</button>
+        </header>
+
+        <button class="recall-card" id="recallButton">
+          <span class="recall-icon">↻</span>
+          <span><small>遇见过去的自己</small><strong>三年前的今天，你在海边。</strong></span>
+          <span class="arrow">→</span>
+        </button>
+
+        <div class="section-title"><h2>最近的记忆</h2><button>筛选</button></div>
+        <article class="memory-card" data-open-detail>
+          <div class="photo photo-sunset"><span class="photo-date">08 / 11</span></div>
+          <div class="memory-copy">
+            <div class="meta"><time>2026.08.11 · 18:42</time><span>厦门 · 海边</span></div>
+            <h3>今天的风很大。</h3>
+            <p>本来只是想一个人走走，结果看到了很漂亮的晚霞。海面被照成了温柔的金色。</p>
+            <div class="tags"><span>平静</span><span>#夏天</span><span>#一个人</span></div>
+          </div>
+        </article>
+
+        <article class="memory-card" data-open-detail>
+          <div class="photo-grid"><div class="photo photo-window"></div><div class="photo photo-book"></div></div>
+          <div class="memory-copy">
+            <div class="meta"><time>2026.08.03 · 15:20</time><span>家</span></div>
+            <h3>雨停之后，房间忽然很安静。</h3>
+            <p>读完了搁置很久的那本书，留在窗边坐了一会儿。</p>
+            <div class="tags"><span>治愈</span><span>#阅读</span></div>
+          </div>
+        </article>
+      </section>
+
+      <section class="screen" data-screen="create">
+        <header class="page-head compact"><button class="text-button" data-route="home">取消</button><h1>记录此刻</h1><button class="save-button" id="saveMemory">保存</button></header>
+        <div class="composer">
+          <label class="upload-zone" tabindex="0">
+            <input type="file" accept="image/jpeg,image/png,image/webp" multiple hidden>
+            <span class="upload-icon">＋</span><strong>添加照片</strong><small>JPG、PNG、WEBP · 支持多选</small>
+          </label>
+          <div class="selected-media hidden" id="selectedMedia"><div class="media-thumb photo-sunset"><span>封面</span></div><div class="media-thumb photo-window"><button aria-label="移除">×</button></div><label class="media-add">＋</label></div>
+          <label class="field story-field"><span>此刻在想什么？</span><textarea rows="7" placeholder="写下发生的事情，也写下当时的自己……"></textarea></label>
+          <div class="form-grid">
+            <label class="field"><span>事件时间</span><input type="datetime-local" value="2026-08-25T16:30"></label>
+            <label class="field"><span>地点</span><input type="text" placeholder="添加地点"></label>
+          </div>
+          <fieldset class="mood-picker"><legend>此刻的心情</legend><button class="selected">☀ 开心</button><button>◐ 平静</button><button>☂ 难过</button><button>♧ 治愈</button><button>＋ 自定义</button></fieldset>
+          <label class="field"><span>标签</span><input type="text" placeholder="输入后按回车，例如：夏天"></label>
+          <p class="private-line">⌁ 这条记忆默认仅你自己可见</p>
+        </div>
+      </section>
+
+      <section class="screen" data-screen="timeline">
+        <header class="page-head"><div><p class="eyebrow">YOUR TIME</p><h1>时间</h1><p>沿着时间，慢慢往回走。</p></div><button class="year-picker">2026⌄</button></header>
+        <div class="view-tabs"><button class="active">时间轴</button><button>我的一年</button></div>
+        <div class="timeline">
+          <div class="year-block"><div class="year-label"><strong>2026</strong><span>18 个瞬间</span></div>
+            <div class="months">
+              <button><span class="dot"></span><strong>八月</strong><small>6 条记忆</small><i class="mini-photo photo-sunset"></i></button>
+              <button><span class="dot"></span><strong>七月</strong><small>3 条记忆</small><i class="mini-photo photo-leaf"></i></button>
+              <button><span class="dot"></span><strong>五月</strong><small>5 条记忆</small><i class="mini-photo photo-window"></i></button>
+            </div>
+          </div>
+          <div class="year-block muted"><div class="year-label"><strong>2025</strong><span>42 个瞬间</span></div><div class="months"><button><span class="dot"></span><strong>十二月</strong><small>4 条记忆</small></button></div></div>
+        </div>
+      </section>
+
+      <section class="screen" data-screen="memories">
+        <header class="page-head"><div><p class="eyebrow">YOUR ARCHIVE</p><h1>记忆</h1><p>换一种方式，重新找到它们。</p></div></header>
+        <label class="search-box"><span>⌕</span><input id="searchInput" type="search" placeholder="搜索文字、标签、地点或描述一段记忆"></label>
+        <div class="filter-row"><button class="active">全部</button><button>标签</button><button>地点</button><button>心情</button></div>
+        <div class="memory-stats"><span><strong>126</strong>个瞬间</span><span><strong>486</strong>张照片</span><span><strong>19</strong>个地点</span></div>
+        <div class="section-title"><h2>常用标签</h2><button>查看全部</button></div>
+        <div class="tag-cloud"><button><strong>#旅行</strong><small>42 条</small></button><button><strong>#朋友</strong><small>38 条</small></button><button><strong>#夏天</strong><small>24 条</small></button><button><strong>#一个人</strong><small>16 条</small></button></div>
+        <div class="section-title"><h2>照片墙</h2><button>按时间⌄</button></div>
+        <div class="gallery"><button class="photo photo-sunset" data-open-detail></button><button class="photo photo-window" data-open-detail></button><button class="photo photo-book" data-open-detail></button><button class="photo photo-leaf" data-open-detail></button><button class="photo photo-city" data-open-detail></button><button class="photo photo-night" data-open-detail></button></div>
+      </section>
+
+      <section class="screen" data-screen="profile">
+        <header class="page-head"><div><p class="eyebrow">PRIVATE SPACE</p><h1>我的</h1><p>关于你的记录与数据。</p></div></header>
+        <div class="profile-card"><div class="avatar">林</div><div><strong>林默</strong><small>从 2025 年 4 月开始记录</small></div><button>编辑</button></div>
+        <div class="settings-group"><h2>记忆</h2><button><span>▱</span><div><strong>归档</strong><small>暂时收起，但不会失去</small></div><i>12 →</i></button><button><span>♲</span><div><strong>回收站</strong><small>删除的内容保留 30 天</small></div><i>2 →</i></button><button><span>✉</span><div><strong>未来信箱</strong><small>写给未来的自己</small></div><i>1 →</i></button></div>
+        <div class="settings-group"><h2>数据与隐私</h2><button><span>⇩</span><div><strong>备份与导出</strong><small>下载属于你的全部记忆</small></div><i>→</i></button><button><span>⌁</span><div><strong>隐私设置</strong><small>分享链接与 AI 搜索</small></div><i>→</i></button><button data-route="security"><span>⚿</span><div><strong>修改访问密码</strong><small>定期更换只有你知道的密码</small></div><i>→</i></button><button data-route="login"><span>↪</span><div><strong>退出登录</strong><small>退出当前设备上的私人空间</small></div><i>→</i></button></div>
+      </section>
+
+      <section class="screen" data-screen="security">
+        <header class="page-head compact"><button class="round-icon" data-route="profile" aria-label="返回">←</button><h1>修改访问密码</h1><span class="head-spacer"></span></header>
+        <div class="security-panel">
+          <p class="eyebrow">PRIVATE ACCESS</p><h2>只让你自己知道</h2><p>修改后，其他设备上的旧会话将退出。请使用不少于 10 位且未在其他网站使用过的密码。</p>
+          <form id="changePasswordForm">
+            <label class="field"><span>当前密码</span><input id="currentPassword" type="password" autocomplete="current-password" required></label>
+            <label class="field"><span>新密码</span><input id="newPassword" type="password" autocomplete="new-password" minlength="10" required></label>
+            <label class="field"><span>再次输入新密码</span><input id="confirmPassword" type="password" autocomplete="new-password" minlength="10" required></label>
+            <button class="login-submit" type="submit">确认修改</button>
+          </form>
+          <p class="private-line">密码只交给认证服务进行加密验证，不会写入记忆数据库。</p>
+        </div>
+      </section>
+
+      <section class="screen" data-screen="detail">
+        <header class="page-head compact"><button class="round-icon" data-route="home" aria-label="返回">←</button><div class="detail-actions"><button>分享</button><button>•••</button></div></header>
+        <article class="detail-memory">
+          <div class="detail-photo photo-sunset"></div>
+          <div class="detail-thumbs"><button class="photo photo-sunset active"></button><button class="photo photo-window"></button><button class="photo photo-city"></button></div>
+          <p class="eyebrow">2026.08.11 · 18:42</p><h1>今天的风很大。</h1>
+          <p class="detail-story">本来只是想一个人走走，结果看到了很漂亮的晚霞。海面被照成了温柔的金色。那一刻忽然觉得，很多想不明白的事情，也可以先放一放。</p>
+          <dl><div><dt>地点</dt><dd>厦门 · 海边</dd></div><div><dt>心情</dt><dd>◐ 平静</dd></div><div><dt>标签</dt><dd>#夏天　#一个人</dd></div></dl>
+          <button class="edit-memory">编辑这条记忆</button><button class="quiet-action">不在“随机回忆”中出现</button>
+        </article>
+      </section>
+    </main>
+
+    <nav class="bottom-nav" aria-label="移动端导航">
+      <button class="active" data-route="home"><span>⌂</span>首页</button><button data-route="timeline"><span>◷</span>时间</button><button class="floating-new" data-route="create"><span>＋</span></button><button data-route="memories"><span>◇</span>记忆</button><button data-route="profile"><span>○</span>我的</button>
+    </nav>
+  </div>
+
+  <div class="toast" role="status" aria-live="polite"></div>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4/dist/umd/supabase.min.js"></script>
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
