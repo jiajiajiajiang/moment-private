@@ -251,7 +251,7 @@ for each row execute function public.set_updated_at();
 create or replace function public.capture_memory_version()
 returns trigger
 language plpgsql
-security invoker
+security definer
 set search_path = ''
 as $$
 begin

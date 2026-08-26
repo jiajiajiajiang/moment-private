@@ -59,7 +59,7 @@
           <span class="arrow">→</span>
         </button>
 
-        <div class="section-title"><h2>最近的记忆</h2><button>筛选</button></div>
+        <div class="section-title"><h2>最近的记忆</h2><button id="homeFilterButton">筛选</button></div>
         <div id="memoryFeed" class="memory-feed" aria-live="polite">
         <article class="memory-card demo-memory" data-open-detail>
           <div class="photo photo-sunset"><span class="photo-date">08 / 11</span></div>
@@ -104,9 +104,9 @@
       </section>
 
       <section class="screen" data-screen="timeline">
-        <header class="page-head"><div><p class="eyebrow">YOUR TIME</p><h1>时间</h1><p>沿着时间，慢慢往回走。</p></div><button class="year-picker">2026⌄</button></header>
-        <div class="view-tabs"><button class="active">时间轴</button><button>我的一年</button></div>
-        <div class="timeline">
+        <header class="page-head"><div><p class="eyebrow">YOUR TIME</p><h1>时间</h1><p>沿着时间，慢慢往回走。</p></div><select class="year-picker" id="timelineYear" aria-label="选择年份"></select></header>
+        <div class="view-tabs" id="timelineTabs"><button class="active" data-view="timeline">时间轴</button><button data-view="year">我的一年</button></div>
+        <div class="timeline" id="timelineContent">
           <div class="year-block"><div class="year-label"><strong>2026</strong><span>18 个瞬间</span></div>
             <div class="months">
               <button><span class="dot"></span><strong>八月</strong><small>6 条记忆</small><i class="mini-photo photo-sunset"></i></button>
@@ -121,19 +121,19 @@
       <section class="screen" data-screen="memories">
         <header class="page-head"><div><p class="eyebrow">YOUR ARCHIVE</p><h1>记忆</h1><p>换一种方式，重新找到它们。</p></div></header>
         <label class="search-box"><span>⌕</span><input id="searchInput" type="search" placeholder="搜索文字、标签、地点或描述一段记忆"></label>
-        <div class="filter-row"><button class="active">全部</button><button>标签</button><button>地点</button><button>心情</button></div>
-        <div class="memory-stats"><span><strong>126</strong>个瞬间</span><span><strong>486</strong>张照片</span><span><strong>19</strong>个地点</span></div>
+        <div class="filter-row" id="memoryFilters"><button class="active" data-filter="all">全部</button><button data-filter="tag">标签</button><button data-filter="location">地点</button><button data-filter="mood">心情</button></div>
+        <div class="memory-stats" id="memoryStats"><span><strong>0</strong>个瞬间</span><span><strong>0</strong>张照片</span><span><strong>0</strong>个地点</span></div>
         <div class="section-title"><h2>常用标签</h2><button>查看全部</button></div>
-        <div class="tag-cloud"><button><strong>#旅行</strong><small>42 条</small></button><button><strong>#朋友</strong><small>38 条</small></button><button><strong>#夏天</strong><small>24 条</small></button><button><strong>#一个人</strong><small>16 条</small></button></div>
+        <div class="tag-cloud" id="tagCloud"></div>
         <div class="section-title"><h2>照片墙</h2><button>按时间⌄</button></div>
-        <div class="gallery"><button class="photo photo-sunset" data-open-detail></button><button class="photo photo-window" data-open-detail></button><button class="photo photo-book" data-open-detail></button><button class="photo photo-leaf" data-open-detail></button><button class="photo photo-city" data-open-detail></button><button class="photo photo-night" data-open-detail></button></div>
+        <div class="gallery" id="memoryGallery"></div>
       </section>
 
       <section class="screen" data-screen="profile">
         <header class="page-head"><div><p class="eyebrow">PRIVATE SPACE</p><h1>我的</h1><p>关于你的记录与数据。</p></div></header>
-        <div class="profile-card"><div class="avatar">林</div><div><strong>林默</strong><small>从 2025 年 4 月开始记录</small></div><button>编辑</button></div>
-        <div class="settings-group"><h2>记忆</h2><button><span>▱</span><div><strong>归档</strong><small>暂时收起，但不会失去</small></div><i>12 →</i></button><button><span>♲</span><div><strong>回收站</strong><small>删除的内容保留 30 天</small></div><i>2 →</i></button><button><span>✉</span><div><strong>未来信箱</strong><small>写给未来的自己</small></div><i>1 →</i></button></div>
-        <div class="settings-group"><h2>数据与隐私</h2><button><span>⇩</span><div><strong>备份与导出</strong><small>下载属于你的全部记忆</small></div><i>→</i></button><button><span>⌁</span><div><strong>隐私设置</strong><small>分享链接与 AI 搜索</small></div><i>→</i></button><button data-route="security"><span>⚿</span><div><strong>修改访问密码</strong><small>定期更换只有你知道的密码</small></div><i>→</i></button><button data-route="login"><span>↪</span><div><strong>退出登录</strong><small>退出当前设备上的私人空间</small></div><i>→</i></button></div>
+        <div class="profile-card"><div class="avatar" id="profileAvatar">我</div><div><strong id="profileName">我的片刻</strong><small id="profileSince">正在读取记录信息…</small></div><button id="editProfileButton">编辑</button></div>
+        <div class="settings-group"><h2>记忆</h2><button id="openArchive"><span>▱</span><div><strong>归档</strong><small>暂时收起，但不会失去</small></div><i id="archiveCount">0 →</i></button><button id="openTrash"><span>♲</span><div><strong>回收站</strong><small>可恢复，也可由你确认后永久删除</small></div><i id="trashCount">0 →</i></button><button id="futureMailbox"><span>✉</span><div><strong>未来信箱</strong><small>写给未来的自己</small></div><i>→</i></button></div>
+        <div class="settings-group"><h2>数据与隐私</h2><button id="exportMemories"><span>⇩</span><div><strong>备份与导出</strong><small>下载属于你的全部记忆</small></div><i>→</i></button><button id="privacySettings"><span>⌁</span><div><strong>隐私设置</strong><small>回忆与本机缓存设置</small></div><i>→</i></button><button data-route="security"><span>⚿</span><div><strong>修改访问密码</strong><small>定期更换只有你知道的密码</small></div><i>→</i></button><button data-route="login"><span>↪</span><div><strong>退出登录</strong><small>退出当前设备上的私人空间</small></div><i>→</i></button></div>
       </section>
 
       <section class="screen" data-screen="security">
@@ -151,15 +151,20 @@
       </section>
 
       <section class="screen" data-screen="detail">
-        <header class="page-head compact"><button class="round-icon" data-route="home" aria-label="返回">←</button><div class="detail-actions"><button>分享</button><button>•••</button></div></header>
+        <header class="page-head compact"><button class="round-icon" data-route="home" aria-label="返回">←</button><div class="detail-actions"><button id="shareMemory">分享摘要</button><button id="memoryMenu" aria-label="更多操作">•••</button></div></header>
         <article class="detail-memory">
-          <div class="detail-photo photo-sunset"></div>
-          <div class="detail-thumbs"><button class="photo photo-sunset active"></button><button class="photo photo-window"></button><button class="photo photo-city"></button></div>
-          <p class="eyebrow">2026.08.11 · 18:42</p><h1>今天的风很大。</h1>
-          <p class="detail-story">本来只是想一个人走走，结果看到了很漂亮的晚霞。海面被照成了温柔的金色。那一刻忽然觉得，很多想不明白的事情，也可以先放一放。</p>
-          <dl><div><dt>地点</dt><dd>厦门 · 海边</dd></div><div><dt>心情</dt><dd>◐ 平静</dd></div><div><dt>标签</dt><dd>#夏天　#一个人</dd></div></dl>
-          <button class="edit-memory">编辑这条记忆</button><button class="quiet-action">不在“随机回忆”中出现</button>
+          <div class="detail-photo photo-sunset" id="detailPhoto"></div>
+          <div class="detail-thumbs" id="detailThumbs"></div>
+          <p class="eyebrow" id="detailDate">—</p><h1 id="detailTitle">正在读取记忆…</h1>
+          <p class="detail-story" id="detailStory"></p>
+          <dl><div><dt>地点</dt><dd id="detailLocation">—</dd></div><div><dt>心情</dt><dd id="detailMood">—</dd></div><div><dt>标签</dt><dd id="detailTags">—</dd></div></dl>
+          <button class="edit-memory" id="editMemory">编辑这条记忆</button><button class="quiet-action" id="toggleRecall">不在“随机回忆”中出现</button>
         </article>
+      </section>
+
+      <section class="screen" data-screen="collection">
+        <header class="page-head compact"><button class="round-icon" data-route="profile" aria-label="返回">←</button><h1 id="collectionTitle">归档</h1><span class="head-spacer"></span></header>
+        <div id="collectionList" class="collection-list"></div>
       </section>
     </main>
 
@@ -177,6 +182,10 @@
       <footer><p>搜索与地图由 OpenStreetMap 提供；请勿输入私人地址。</p><button id="confirmLocation" type="button" disabled>使用这个城市</button></footer>
     </div>
   </dialog>
+  <dialog id="profileDialog" class="small-dialog"><form method="dialog" id="profileForm"><h2>编辑个人资料</h2><label class="field"><span>显示名称</span><input id="profileNameInput" maxlength="40" required></label><div class="dialog-actions"><button value="cancel">取消</button><button id="saveProfile" value="default">保存</button></div></form></dialog>
+  <dialog id="actionDialog" class="small-dialog"><div><h2>管理这条记忆</h2><div class="action-list"><button id="memoryHistory">查看修改历史</button><button id="archiveMemory">归档</button><button id="trashMemory" class="danger">移到回收站</button><button id="cancelMemoryAction">取消</button></div></div></dialog>
+  <dialog id="historyDialog" class="small-dialog"><div><h2>修改历史</h2><div id="historyList" class="history-list"></div><div class="dialog-actions"><button id="closeHistory">关闭</button></div></div></dialog>
+  <dialog id="futureDialog" class="small-dialog wide-dialog"><div><h2>未来信箱</h2><p class="muted">内容在浏览器中加密后再保存。解锁密码不会上传，请务必牢记。</p><div id="futureLetterList" class="history-list"></div><form id="futureLetterForm"><label class="field"><span>写给未来的自己</span><textarea id="futureContent" rows="5" required></textarea></label><div class="form-grid"><label class="field"><span>解锁时间</span><input id="futureUnlockAt" type="datetime-local" required></label><label class="field"><span>独立解锁密码</span><input id="futurePassphrase" type="password" minlength="10" required></label></div><div class="dialog-actions"><button type="button" id="closeFuture">关闭</button><button type="submit">加密封存</button></div></form></div></dialog>
   <div class="toast" role="status" aria-live="polite"></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4/dist/umd/supabase.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
