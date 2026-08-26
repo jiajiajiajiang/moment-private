@@ -4,15 +4,16 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#f7f5f2">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://*.supabase.co wss://*.supabase.co; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'; upgrade-insecure-requests">
-  <title>片刻 Moment — 页面原型</title>
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://cdn.jsdelivr.net https://tile.openstreetmap.org https://*.supabase.co; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://nominatim.openstreetmap.org https://tile.openstreetmap.org; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'; upgrade-insecure-requests">
+  <title>片刻 Moment — 私人记忆空间</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600&family=Noto+Serif+SC:wght@500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css">
 </head>
 <body>
-  <div class="prototype-note">可点击页面原型 · 数据仅用于演示</div>
+  <div class="prototype-note">私人记忆空间 · 登录后数据实时保存</div>
 
   <div class="app-shell">
     <aside class="side-nav" aria-label="主导航">
@@ -59,7 +60,8 @@
         </button>
 
         <div class="section-title"><h2>最近的记忆</h2><button>筛选</button></div>
-        <article class="memory-card" data-open-detail>
+        <div id="memoryFeed" class="memory-feed" aria-live="polite">
+        <article class="memory-card demo-memory" data-open-detail>
           <div class="photo photo-sunset"><span class="photo-date">08 / 11</span></div>
           <div class="memory-copy">
             <div class="meta"><time>2026.08.11 · 18:42</time><span>厦门 · 海边</span></div>
@@ -69,7 +71,7 @@
           </div>
         </article>
 
-        <article class="memory-card" data-open-detail>
+        <article class="memory-card demo-memory" data-open-detail>
           <div class="photo-grid"><div class="photo photo-window"></div><div class="photo photo-book"></div></div>
           <div class="memory-copy">
             <div class="meta"><time>2026.08.03 · 15:20</time><span>家</span></div>
@@ -78,6 +80,8 @@
             <div class="tags"><span>治愈</span><span>#阅读</span></div>
           </div>
         </article>
+        </div>
+        <div id="memoryEmpty" class="empty-state hidden"><span>◇</span><h3>这里还没有记忆</h3><p>从一张照片、一句话开始。</p><button data-route="create">记录第一个片刻</button></div>
       </section>
 
       <section class="screen" data-screen="create">
@@ -88,13 +92,13 @@
             <span class="upload-icon">＋</span><strong>添加照片</strong><small>JPG、PNG、WEBP · 支持多选</small>
           </label>
           <div class="selected-media hidden" id="selectedMedia"><div class="media-thumb photo-sunset"><span>封面</span></div><div class="media-thumb photo-window"><button aria-label="移除">×</button></div><label class="media-add">＋</label></div>
-          <label class="field story-field"><span>此刻在想什么？</span><textarea rows="7" placeholder="写下发生的事情，也写下当时的自己……"></textarea></label>
+          <label class="field story-field"><span>此刻在想什么？</span><textarea id="memoryContent" rows="7" placeholder="写下发生的事情，也写下当时的自己……"></textarea></label>
           <div class="form-grid">
-            <label class="field"><span>事件时间</span><input type="datetime-local" value="2026-08-25T16:30"></label>
-            <label class="field"><span>地点</span><input type="text" placeholder="添加地点"></label>
+            <label class="field"><span>事件时间</span><input id="eventAt" type="datetime-local"></label>
+            <label class="field location-field"><span>地点</span><button id="openLocationPicker" type="button"><span id="locationLabel">搜索并选择城市</span><i>⌖</i></button><input id="locationName" type="hidden"><input id="locationLatitude" type="hidden"><input id="locationLongitude" type="hidden"></label>
           </div>
           <fieldset class="mood-picker"><legend>此刻的心情</legend><button class="selected">☀ 开心</button><button>◐ 平静</button><button>☂ 难过</button><button>♧ 治愈</button><button>＋ 自定义</button></fieldset>
-          <label class="field"><span>标签</span><input type="text" placeholder="输入后按回车，例如：夏天"></label>
+          <label class="field"><span>标签</span><input id="memoryTags" type="text" placeholder="用逗号分隔，例如：夏天，旅行"></label>
           <p class="private-line">⌁ 这条记忆默认仅你自己可见</p>
         </div>
       </section>
@@ -164,8 +168,18 @@
     </nav>
   </div>
 
+  <dialog id="locationDialog" class="location-dialog">
+    <div class="map-sheet">
+      <header><div><p class="eyebrow">WORLD LOCATION</p><h2>选择一座城市</h2></div><button id="closeLocationPicker" aria-label="关闭">×</button></header>
+      <form id="citySearchForm" class="city-search"><input id="citySearchInput" type="search" placeholder="搜索城市，例如：杭州、Paris、Tokyo" autocomplete="off"><button type="submit">搜索</button></form>
+      <div id="citySearchResults" class="city-results" aria-live="polite"></div>
+      <div id="worldMap" class="world-map" aria-label="世界地图"></div>
+      <footer><p>搜索与地图由 OpenStreetMap 提供；请勿输入私人地址。</p><button id="confirmLocation" type="button" disabled>使用这个城市</button></footer>
+    </div>
+  </dialog>
   <div class="toast" role="status" aria-live="polite"></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4/dist/umd/supabase.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="config.js"></script>
   <script src="app.js"></script>
 </body>
