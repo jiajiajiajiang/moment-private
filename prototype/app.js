@@ -22,6 +22,7 @@ let selectedMemoryId = null;
 let collectionStatus = 'archived';
 let editingMemoryId = null;
 let customMoodValue = '';
+let selectedDetailAssetIndex = 0;
 
 function showToast(message) {
   toast.textContent = message;
@@ -259,7 +260,7 @@ async function memoryCard(memory, compact = false) {
   article.className = `memory-card stored-memory${compact ? ' compact-card' : ''}`;
   const raw = memory.content || '一段没有文字的记忆';
   const title = raw.length > 22 ? `${raw.slice(0, 22)}…` : raw;
-  article.innerHTML = `${imageUrl ? `<div class="photo stored-photo" style="background-image:url('${escapeHtml(imageUrl)}')"><span class="photo-date">${String(date.getMonth() + 1).padStart(2, '0')} / ${String(date.getDate()).padStart(2, '0')}</span></div>` : ''}
+  article.innerHTML = `${imageUrl ? `<div class="stored-photo"><img class="memory-original" src="${escapeHtml(imageUrl)}" alt="记忆照片" loading="lazy" decoding="async"><span class="photo-date">${String(date.getMonth() + 1).padStart(2, '0')} / ${String(date.getDate()).padStart(2, '0')}</span></div>` : ''}
     <div class="memory-copy"><div class="meta"><time>${date.toLocaleString('zh-CN', { dateStyle: 'medium', timeStyle: 'short' })}</time><span>${escapeHtml(memory.location_name || '未设置地点')}</span></div>
     <h3>${escapeHtml(title)}</h3><p>${escapeHtml(raw)}</p><div class="tags"><span>${escapeHtml(moodLabel(memory))}</span>${memoryTags(memory).map(tag => `<span>#${escapeHtml(tag)}</span>`).join('')}</div></div>`;
   article.addEventListener('click', () => openMemory(memory.id));
@@ -486,14 +487,17 @@ async function renderDetail() {
   const urls = [];
   for (const asset of assets) urls.push(await signedImageUrl(asset));
   const photo = document.getElementById('detailPhoto');
-  photo.style.backgroundImage = urls[0] ? `url('${urls[0]}')` : '';
+  selectedDetailAssetIndex = 0;
+  document.getElementById('downloadOriginal').disabled = !assets.length;
+  photo.innerHTML = urls[0] ? `<img class="detail-original" src="${escapeHtml(urls[0])}" alt="记忆原图">` : '';
   photo.classList.toggle('no-photo', !urls[0]);
   const thumbs = document.getElementById('detailThumbs');
   thumbs.innerHTML = urls.map((url,index) => `<button class="photo${index===0?' active':''}" style="background-image:url('${escapeHtml(url)}')" data-index="${index}"></button>`).join('');
   thumbs.querySelectorAll('button').forEach(button => button.addEventListener('click', () => {
     thumbs.querySelectorAll('button').forEach(item => item.classList.remove('active'));
     button.classList.add('active');
-    photo.style.backgroundImage = `url('${urls[Number(button.dataset.index)]}')`;
+    selectedDetailAssetIndex = Number(button.dataset.index);
+    photo.innerHTML = `<img class="detail-original" src="${escapeHtml(urls[selectedDetailAssetIndex])}" alt="记忆原图">`;
   }));
   const date = new Date(memory.event_at);
   document.getElementById('detailDate').textContent = date.toLocaleString('zh-CN', { dateStyle:'long', timeStyle:'short' });
@@ -567,14 +571,87 @@ async function changeMemoryStatus(status) {
   route('home');
 }
 
-document.getElementById('shareMemory').addEventListener('click', async () => {
+function currentShareText() {
   const memory = memoryCache.find(item => item.id === selectedMemoryId);
-  if (!memory) return;
-  const text = `${new Date(memory.event_at).toLocaleDateString('zh-CN')}\n${memory.content}\n${memory.location_name || ''}`.trim();
+  if (!memory) return '';
+  return `片刻 · ${new Date(memory.event_at).toLocaleDateString('zh-CN')}\n${memory.content || '一段照片记忆'}${memory.location_name ? `\n地点：${memory.location_name}` : ''}${memoryTags(memory).length ? `\n标签：${memoryTags(memory).map(tag => `#${tag}`).join(' ')}` : ''}`;
+}
+
+document.getElementById('shareMemory').addEventListener('click', () => {
+  const text = currentShareText();
+  if (!text) return;
+  document.getElementById('shareSummary').value = text;
+  document.getElementById('systemShareSummary').classList.toggle('hidden', !navigator.share);
+  document.getElementById('shareDialog').showModal();
+});
+
+async function copyTextReliably(text) {
   try {
-    if (navigator.share) await navigator.share({ title:'我的片刻', text });
-    else { await navigator.clipboard.writeText(text); showToast('记忆摘要已复制，不包含私人图片链接'); }
-  } catch (error) { if (error.name !== 'AbortError') showToast('分享未完成'); }
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch {
+    const area = document.createElement('textarea');
+    area.value = text;
+    area.style.position = 'fixed';
+    area.style.opacity = '0';
+    document.body.appendChild(area);
+    area.select();
+    const copied = document.execCommand('copy');
+    area.remove();
+    return copied;
+  }
+}
+
+document.getElementById('copyShareSummary').addEventListener('click', async () => {
+  const copied = await copyTextReliably(document.getElementById('shareSummary').value);
+  if (!copied) return showToast('复制失败，请在文本框中手动选择复制');
+  document.getElementById('shareDialog').close();
+  showToast('摘要已复制，可直接粘贴到微信或其他应用');
+});
+document.getElementById('systemShareSummary').addEventListener('click', async () => {
+  try {
+    await navigator.share({ title:'我的片刻', text:document.getElementById('shareSummary').value });
+    document.getElementById('shareDialog').close();
+  } catch (error) { if (error.name !== 'AbortError') showToast('系统分享未完成，请使用“复制摘要”'); }
+});
+document.getElementById('downloadShareSummary').addEventListener('click', () => {
+  const blob = new Blob([document.getElementById('shareSummary').value], {type:'text/plain;charset=utf-8'});
+  downloadBlob(blob, `moment-${new Date().toISOString().slice(0,10)}.txt`);
+  showToast('摘要文字已下载');
+});
+document.getElementById('closeShareDialog').addEventListener('click', () => document.getElementById('shareDialog').close());
+
+function downloadBlob(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+document.getElementById('downloadOriginal').addEventListener('click', async event => {
+  const memory = memoryCache.find(item => item.id === selectedMemoryId);
+  const assets = (memory?.media_assets || []).sort((a,b)=>a.sort_order-b.sort_order);
+  const asset = assets[selectedDetailAssetIndex];
+  if (!asset) return showToast('这条记忆没有可以下载的原图');
+  const button = event.currentTarget;
+  button.disabled = true;
+  button.textContent = '下载中…';
+  try {
+    const { data, error } = await supabaseClient.storage.from('memory-media').download(asset.original_object_key);
+    if (error) throw error;
+    downloadBlob(data, asset.original_filename || `moment-original-${asset.id}`);
+    showToast('原图已开始下载');
+  } catch (error) {
+    console.error(error);
+    showToast('原图下载失败，请检查网络后重试');
+  } finally {
+    button.disabled = false;
+    button.textContent = '下载原图';
+  }
 });
 
 async function renderProfile() {

@@ -151,7 +151,7 @@
       </section>
 
       <section class="screen" data-screen="detail">
-        <header class="page-head compact"><button class="round-icon" data-route="home" aria-label="返回">←</button><div class="detail-actions"><button id="shareMemory">分享摘要</button><button id="memoryMenu" aria-label="更多操作">•••</button></div></header>
+        <header class="page-head compact"><button class="round-icon" data-route="home" aria-label="返回">←</button><div class="detail-actions"><button id="downloadOriginal">下载原图</button><button id="shareMemory">分享摘要</button><button id="memoryMenu" aria-label="更多操作">•••</button></div></header>
         <article class="detail-memory">
           <div class="detail-photo photo-sunset" id="detailPhoto"></div>
           <div class="detail-thumbs" id="detailThumbs"></div>
@@ -186,6 +186,7 @@
   <dialog id="actionDialog" class="small-dialog"><div><h2>管理这条记忆</h2><div class="action-list"><button id="memoryHistory">查看修改历史</button><button id="archiveMemory">归档</button><button id="trashMemory" class="danger">移到回收站</button><button id="cancelMemoryAction">取消</button></div></div></dialog>
   <dialog id="historyDialog" class="small-dialog"><div><h2>修改历史</h2><div id="historyList" class="history-list"></div><div class="dialog-actions"><button id="closeHistory">关闭</button></div></div></dialog>
   <dialog id="futureDialog" class="small-dialog wide-dialog"><div><h2>未来信箱</h2><p class="muted">内容在浏览器中加密后再保存。解锁密码不会上传，请务必牢记。</p><div id="futureLetterList" class="history-list"></div><form id="futureLetterForm"><label class="field"><span>写给未来的自己</span><textarea id="futureContent" rows="5" required></textarea></label><div class="form-grid"><label class="field"><span>解锁时间</span><input id="futureUnlockAt" type="datetime-local" required></label><label class="field"><span>独立解锁密码</span><input id="futurePassphrase" type="password" minlength="10" required></label></div><div class="dialog-actions"><button type="button" id="closeFuture">关闭</button><button type="submit">加密封存</button></div></form></div></dialog>
+  <dialog id="shareDialog" class="small-dialog"><div><h2>分享记忆摘要</h2><p class="muted">只分享下方文字，不会暴露原图地址、账户或私人数据库。</p><textarea id="shareSummary" class="share-summary" readonly></textarea><div class="share-actions"><button id="copyShareSummary" class="primary-action">复制摘要</button><button id="systemShareSummary">打开系统分享</button><button id="downloadShareSummary">下载文字</button><button id="closeShareDialog">取消</button></div></div></dialog>
   <div class="toast" role="status" aria-live="polite"></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4/dist/umd/supabase.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
