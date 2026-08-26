@@ -19,9 +19,13 @@ jobs:
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
+
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v6
+
       - name: Validate deployment configuration
         env:
           SUPABASE_URL: ${{ vars.SUPABASE_URL }}
@@ -31,6 +35,7 @@ jobs:
           test -n "$SUPABASE_URL" || (echo "Missing repository variable SUPABASE_URL" && exit 1)
           test -n "$SUPABASE_PUBLISHABLE_KEY" || (echo "Missing repository secret SUPABASE_PUBLISHABLE_KEY" && exit 1)
           test -n "$OWNER_EMAIL" || (echo "Missing repository secret OWNER_EMAIL" && exit 1)
+
       - name: Create public runtime configuration
         env:
           SUPABASE_URL: ${{ vars.SUPABASE_URL }}
@@ -38,10 +43,15 @@ jobs:
           OWNER_EMAIL: ${{ secrets.OWNER_EMAIL }}
         run: |
           printf "window.MOMENT_CONFIG = {\n  supabaseUrl: '%s',\n  supabasePublishableKey: '%s',\n  ownerEmail: '%s'\n};\n" "$SUPABASE_URL" "$SUPABASE_PUBLISHABLE_KEY" "$OWNER_EMAIL" > prototype/config.js
-      - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v3
+
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v4
         with:
           path: prototype
+
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
