@@ -4,13 +4,12 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#f7f5f2">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://cdn.jsdelivr.net https://tile.openstreetmap.org https://*.supabase.co; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://nominatim.openstreetmap.org https://tile.openstreetmap.org; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'; upgrade-insecure-requests">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://cdn.jsdelivr.net https://*.supabase.co; connect-src 'self' https://*.supabase.co wss://*.supabase.co; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'; upgrade-insecure-requests">
   <title>片刻 Moment — 私人记忆空间</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600&family=Noto+Serif+SC:wght@500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css">
 </head>
 <body>
   <div class="prototype-note">私人记忆空间 · 登录后数据实时保存</div>
@@ -179,7 +178,7 @@
       <form id="citySearchForm" class="city-search"><input id="citySearchInput" type="search" placeholder="搜索城市，例如：杭州、Paris、Tokyo" autocomplete="off"><button type="submit">搜索</button></form>
       <div id="citySearchResults" class="city-results" aria-live="polite"></div>
       <div id="worldMap" class="world-map" aria-label="世界地图"></div>
-      <footer><p>搜索与地图由 OpenStreetMap 提供；请勿输入私人地址。</p><button id="confirmLocation" type="button" disabled>使用这个城市</button></footer>
+      <footer><p>使用随网页部署的 GeoNames 离线城市库；不获取设备定位，也不会发送搜索内容。</p><button id="confirmLocation" type="button" disabled>使用这个城市</button></footer>
     </div>
   </dialog>
   <dialog id="profileDialog" class="small-dialog"><form method="dialog" id="profileForm"><h2>编辑个人资料</h2><label class="field"><span>显示名称</span><input id="profileNameInput" maxlength="40" required></label><div class="dialog-actions"><button value="cancel">取消</button><button id="saveProfile" value="default">保存</button></div></form></dialog>
@@ -189,7 +188,6 @@
   <dialog id="shareDialog" class="small-dialog"><div><h2>分享记忆摘要</h2><p class="muted">只分享下方文字，不会暴露原图地址、账户或私人数据库。</p><textarea id="shareSummary" class="share-summary" readonly></textarea><div class="share-actions"><button id="copyShareSummary" class="primary-action">复制摘要</button><button id="systemShareSummary">打开系统分享</button><button id="downloadShareSummary">下载文字</button><button id="closeShareDialog">取消</button></div></div></dialog>
   <div class="toast" role="status" aria-live="polite"></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4/dist/umd/supabase.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="config.js"></script>
   <script src="app.js"></script>
 </body>

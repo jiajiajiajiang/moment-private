@@ -1,0 +1,9 @@
+City search data: GeoNames cities15000
+Source: https://download.geonames.org/export/dump/cities15000.zip
+License: Creative Commons Attribution 4.0
+License URL: https://creativecommons.org/licenses/by/4.0/
+
+The data is provided "as is" without warranty or representation of accuracy,
+timeliness, or completeness. Moment bundles a compact subset containing city
+names, alternate names, country codes, coordinates, and population solely for
+local city search.

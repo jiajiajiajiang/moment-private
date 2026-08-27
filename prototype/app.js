@@ -378,50 +378,67 @@ async function renderMemoryArchive(query = '', filter = 'all') {
 }
 
 const locationDialog = document.getElementById('locationDialog');
-document.getElementById('openLocationPicker').addEventListener('click', () => {
+let localCities = null;
+document.getElementById('openLocationPicker').addEventListener('click', async () => {
   locationDialog.showModal();
-  if (!worldMap) {
-    if (!window.L) {
-      document.getElementById('citySearchResults').innerHTML = '<p>地图组件加载失败，请检查网络后刷新页面。</p>';
-      showToast('地图组件没有加载，请检查网络连接');
-      return;
-    }
-    worldMap = L.map('worldMap', { worldCopyJump: true }).setView([20, 0], 2);
-    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 19,
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-    }).addTo(worldMap);
-  }
-  window.setTimeout(() => worldMap?.invalidateSize(), 120);
+  renderOfflineWorldMap(selectedCity);
+  if (!localCities) loadLocalCities().catch(() => {
+    document.getElementById('citySearchResults').innerHTML = '<p>城市库加载失败，请刷新页面后重试。</p>';
+  });
 });
 document.getElementById('closeLocationPicker').addEventListener('click', () => locationDialog.close());
 
 function cityLabel(result) {
-  const address = result.address || {};
-  const city = address.city || address.town || address.village || address.municipality || result.name;
-  return [city, address.state, address.country].filter(Boolean).filter((item, index, list) => list.indexOf(item) === index).join(' · ');
+  return [result.name, result.country].filter(Boolean).join(' · ');
+}
+
+async function loadLocalCities() {
+  const response = await fetch('assets/cities15000.min.json', { cache: 'force-cache' });
+  if (!response.ok) throw new Error('本地城市库加载失败');
+  const rows = await response.json();
+  localCities = rows.map(row => ({ name:row[0], ascii:row[1], country:row[2], lat:row[3], lon:row[4], population:row[5], aliases:row[6] }));
+  return localCities;
+}
+
+function normalizeSearch(value) {
+  return String(value || '').normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+}
+
+function searchLocalCities(query) {
+  const needle = normalizeSearch(query);
+  return localCities.map(city => {
+    const rawNames = [city.name, city.ascii, ...String(city.aliases || '').split('|')].filter(Boolean);
+    const names = normalizeSearch(rawNames.join('|'));
+    const exact = names.split('|').includes(needle);
+    const prefix = names.split('|').some(name => name.startsWith(needle));
+    const match = exact || prefix || names.includes(needle);
+    const matchedName = rawNames.find(name => normalizeSearch(name) === needle) || rawNames.find(name => normalizeSearch(name).includes(needle));
+    const displayCity = matchedName && /[^\u0000-\u00ff]/.test(matchedName) ? { ...city, name:matchedName } : city;
+    return match ? { city:displayCity, score:(exact?3:prefix?2:1) * 1e12 + city.population } : null;
+  }).filter(Boolean).sort((a,b)=>b.score-a.score).slice(0,8).map(item=>item.city);
+}
+
+function renderOfflineWorldMap(city = null) {
+  const map = document.getElementById('worldMap');
+  const marker = city ? `<div class="offline-city-marker" style="left:${((Number(city.lon)+180)/360)*100}%;top:${((90-Number(city.lat))/180)*100}%"><span></span><strong>${escapeHtml(city.name)}</strong></div>` : '';
+  map.innerHTML = `<svg class="world-silhouette" viewBox="0 0 1000 500" role="img" aria-label="离线世界地图示意图"><rect width="1000" height="500" rx="18" fill="#dfe8e6"/><g fill="#aebeb5" stroke="#f5f3ef" stroke-width="3"><path d="M60 115L130 64l126 8 74 55-31 55-57 10-27 65-50 12-32-43-49-14-31-61z"/><path d="M260 274l63 25 35 75-20 93-42-12-22-91-38-43z"/><path d="M431 92l88-36 88 26 30 41 92 7 73 46-13 50-91 5-49-32-34 20-35-29-49-5-44-38-65 5-28-30z"/><path d="M509 220l80 5 51 56-14 112-48 65-53-30-19-94-45-49z"/><path d="M796 321l81-28 70 38-20 69-84 22-57-47z"/><path d="M918 158l32-19 30 16-15 34-39 3z"/></g><g stroke="rgba(255,255,255,.52)" stroke-width="1">${[100,200,300,400].map(y=>`<line x1="0" y1="${y}" x2="1000" y2="${y}"/>`).join('')}${[200,400,600,800].map(x=>`<line x1="${x}" y1="0" x2="${x}" y2="500"/>`).join('')}</g></svg>${marker}<div class="offline-map-label">内置离线世界城市图</div>`;
 }
 
 document.getElementById('citySearchForm').addEventListener('submit', async event => {
   event.preventDefault();
   const query = document.getElementById('citySearchInput').value.trim();
   if (!query) return showToast('请输入城市名称');
-  const wait = 1000 - (Date.now() - lastGeoSearch);
-  if (wait > 0) await new Promise(resolve => window.setTimeout(resolve, wait));
-  lastGeoSearch = Date.now();
   const results = document.getElementById('citySearchResults');
-  results.innerHTML = '<p>正在世界地图中寻找…</p>';
+  results.innerHTML = '<p>正在本地城市库中寻找…</p>';
   try {
-    const params = new URLSearchParams({ q: query, format: 'jsonv2', addressdetails: '1', limit: '6', featuretype: 'city' });
-    const response = await fetch(`https://nominatim.openstreetmap.org/search?${params}`);
-    if (!response.ok) throw new Error('地图服务暂时不可用');
-    const cities = await response.json();
+    if (!localCities) await loadLocalCities();
+    const cities = searchLocalCities(query);
     results.innerHTML = '';
     if (!cities.length) results.innerHTML = '<p>没有找到，请尝试城市全名或英文名。</p>';
     cities.forEach(city => {
       const button = document.createElement('button');
       button.type = 'button';
-      button.innerHTML = `<strong>${escapeHtml(cityLabel(city))}</strong><small>${escapeHtml(city.display_name)}</small>`;
+      button.innerHTML = `<strong>${escapeHtml(cityLabel(city))}</strong><small>${escapeHtml(city.ascii)} · 人口约 ${Number(city.population || 0).toLocaleString('zh-CN')}</small>`;
       button.addEventListener('click', () => selectCity(city, button));
       results.appendChild(button);
     });
@@ -431,13 +448,10 @@ document.getElementById('citySearchForm').addEventListener('submit', async event
 });
 
 function selectCity(city, button) {
-  if (!worldMap || !window.L) return;
   document.querySelectorAll('#citySearchResults button').forEach(item => item.classList.remove('selected'));
   button.classList.add('selected');
   selectedCity = { name: cityLabel(city), lat: Number(city.lat), lon: Number(city.lon) };
-  if (cityMarker) cityMarker.remove();
-  cityMarker = L.marker([selectedCity.lat, selectedCity.lon]).addTo(worldMap).bindPopup(escapeHtml(selectedCity.name)).openPopup();
-  worldMap.setView([selectedCity.lat, selectedCity.lon], 8);
+  renderOfflineWorldMap(selectedCity);
   document.getElementById('confirmLocation').disabled = false;
 }
 

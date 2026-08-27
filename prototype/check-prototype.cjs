@@ -10,7 +10,8 @@ const path = require('path');
   const errors = [];
   page.on('pageerror', error => errors.push(error.message));
   await page.route('**/config.js', route => route.fulfill({ contentType: 'application/javascript', body: 'window.MOMENT_CONFIG = {};' }));
-  await page.goto(`file:///${path.resolve(__dirname, 'index.html').replace(/\\/g, '/')}`);
+  const targetUrl = process.env.MOMENT_TEST_URL || `file:///${path.resolve(__dirname, 'index.html').replace(/\\/g, '/')}`;
+  await page.goto(targetUrl);
   await page.waitForTimeout(500);
   await page.screenshot({ path: path.resolve(__dirname, 'prototype-login.png'), fullPage: true });
   await page.evaluate(() => { location.hash = '#home'; });
@@ -22,6 +23,12 @@ const path = require('path');
   await page.screenshot({ path: path.resolve(__dirname, 'prototype-create.png'), fullPage: true });
   await page.locator('#openLocationPicker').click();
   await page.waitForTimeout(800);
+  if (process.env.MOMENT_TEST_URL) {
+    await page.locator('#citySearchInput').fill('杭州');
+    await page.locator('#citySearchForm button').click();
+    await page.waitForSelector('#citySearchResults button');
+    await page.locator('#citySearchResults button').first().click();
+  }
   await page.screenshot({ path: path.resolve(__dirname, 'prototype-location.png'), fullPage: true });
   await page.locator('#closeLocationPicker').click();
   await page.evaluate(() => { location.hash = '#security'; });
