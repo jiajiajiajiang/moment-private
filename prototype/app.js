@@ -17,6 +17,9 @@ let selectedCity = null;
 let worldMap = null;
 let cityMarker = null;
 let lastGeoSearch = 0;
+let activeMapEngine = null;
+let amapReady = null;
+let leafletReady = null;
 let memoryCache = [];
 let selectedMemoryId = null;
 let collectionStatus = 'archived';
@@ -29,6 +32,213 @@ function showToast(message) {
   toast.classList.add('show');
   window.clearTimeout(showToast.timer);
   showToast.timer = window.setTimeout(() => toast.classList.remove('show'), 2600);
+}
+
+function detectMapEnvironment() {
+  const offset = -new Date().getTimezoneOffset();
+  const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
+  const isCN = offset === 480 && /Asia\/(Shanghai|Urumqi|Chongqing|Harbin)/.test(tz);
+  const hasAmapKey = Boolean(authConfig.amapKey && !String(authConfig.amapKey).includes('YOUR_'));
+  return { useAmap: isCN && hasAmapKey, useLeaflet: !(isCN && hasAmapKey) };
+}
+
+function loadAmapScript() {
+  if (amapReady) return amapReady;
+  amapReady = new Promise((resolve, reject) => {
+    const timeout = setTimeout(() => reject(new Error('高德地图加载超时')), 5000);
+    window.__amapReady = () => { clearTimeout(timeout); resolve(window.AMap); };
+    const script = document.createElement('script');
+    script.src = `https://webapi.amap.com/maps?v=2.0&key=${encodeURIComponent(authConfig.amapKey)}&plugin=AMap.PlaceSearch,AMap.Geocoder&callback=__amapReady`;
+    script.onerror = () => { clearTimeout(timeout); reject(new Error('高德脚本加载失败')); };
+    document.head.appendChild(script);
+  }).catch(error => { amapReady = null; throw error; });
+  return amapReady;
+}
+
+function loadLeafletScript() {
+  if (leafletReady) return leafletReady;
+  leafletReady = new Promise((resolve, reject) => {
+    const start = Date.now();
+    const check = () => {
+      if (window.L && window.L.map) return resolve(window.L);
+      if (Date.now() - start > 5000) return reject(new Error('Leaflet 加载超时'));
+      setTimeout(check, 50);
+    };
+    check();
+  }).catch(error => { leafletReady = null; throw error; });
+  return leafletReady;
+}
+
+function destroyMapEngine() {
+  if (worldMap) {
+    try {
+      if (activeMapEngine === 'amap' && worldMap.destroy) worldMap.destroy();
+      else if (activeMapEngine === 'leaflet' && worldMap.remove) worldMap.remove();
+    } catch (e) { /* ignore */ }
+  }
+  worldMap = null;
+  cityMarker = null;
+  const container = document.getElementById('worldMap');
+  if (container) container.innerHTML = '';
+  const confirm = document.getElementById('confirmLocation');
+  if (confirm) confirm.disabled = !selectedCity;
+}
+
+async function initLocationMap() {
+  destroyMapEngine();
+  const env = detectMapEnvironment();
+  const container = document.getElementById('worldMap');
+  try {
+    if (env.useAmap) {
+      await loadAmapScript();
+      initAmapPicker(container);
+      activeMapEngine = 'amap';
+      refreshCityResultsPlaceholder('使用高德地图，搜索或点击选点');
+      return;
+    }
+  } catch (error) {
+    console.warn('高德地图加载失败，回退到 Leaflet:', error.message);
+  }
+  try {
+    await loadLeafletScript();
+    initLeafletPicker(container);
+    activeMapEngine = 'leaflet';
+    refreshCityResultsPlaceholder('使用 OpenStreetMap，搜索或点击选点');
+    return;
+  } catch (error) {
+    console.warn('Leaflet 加载失败，回退到离线:', error.message);
+  }
+  initOfflinePicker();
+  activeMapEngine = 'offline';
+  refreshCityResultsPlaceholder('使用离线城市库，请输入城市名搜索');
+}
+
+function refreshCityResultsPlaceholder(message) {
+  const results = document.getElementById('citySearchResults');
+  if (results && !results.children.length) results.innerHTML = `<p>${escapeHtml(message)}</p>`;
+}
+
+function initAmapPicker(container) {
+  worldMap = new AMap.Map(container, { zoom: 4, center: [104, 35] });
+  worldMap.on('click', (event) => {
+    const lnglat = event.lnglat;
+    const geocoder = new AMap.Geocoder();
+    geocoder.getAddress(lnglat, (status, result) => {
+      if (status === 'complete' && result.info === 'OK') {
+        const addr = result.regeocode.addressComponent;
+        const name = [addr.city || addr.district || addr.province].filter(Boolean)[0] || result.regeocode.formattedAddress;
+        setSelectedCity({ name, lat: lnglat.getLat(), lon: lnglat.getLng(), source: 'amap' });
+      }
+    });
+  });
+}
+
+function initLeafletPicker(container) {
+  worldMap = L.map(container, { zoomControl: true, attributionControl: true }).setView([30, 105], 2);
+  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap',
+    maxZoom: 18
+  }).addTo(worldMap);
+  worldMap.on('click', (event) => reverseGeocodeOSM(event.latlng));
+}
+
+async function reverseGeocodeOSM(latlng) {
+  const now = Date.now();
+  if (now - lastGeoSearch < 1000) return;
+  lastGeoSearch = now;
+  try {
+    const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latlng.lat}&lon=${latlng.lng}&accept-language=zh-CN`);
+    if (!res.ok) throw new Error('网络错误');
+    const data = await res.json();
+    const a = data.address || {};
+    const name = a.city || a.town || a.village || a.county || a.state || (data.display_name || '').split(',')[0];
+    setSelectedCity({ name, lat: latlng.lat, lon: latlng.lng, source: 'osm' });
+  } catch (error) {
+    showToast('逆地理失败，请手动搜索城市');
+  }
+}
+
+function initOfflinePicker() {
+  renderOfflineWorldMap(selectedCity);
+}
+
+function setSelectedCity({ name, lat, lon, source }) {
+  selectedCity = { name, lat: Number(lat), lon: Number(lon), source };
+  document.getElementById('confirmLocation').disabled = false;
+  if (activeMapEngine === 'amap' && worldMap) {
+    if (cityMarker) cityMarker.setPosition(new AMap.LngLat(selectedCity.lon, selectedCity.lat));
+    else cityMarker = new AMap.Marker({ position: [selectedCity.lon, selectedCity.lat], map: worldMap });
+  } else if (activeMapEngine === 'leaflet' && worldMap) {
+    if (cityMarker) cityMarker.setLatLng([selectedCity.lat, selectedCity.lon]);
+    else cityMarker = L.marker([selectedCity.lat, selectedCity.lon]).addTo(worldMap);
+  } else if (activeMapEngine === 'offline') {
+    renderOfflineWorldMap(selectedCity);
+  }
+}
+
+async function searchCitiesOnline(query) {
+  if (activeMapEngine === 'amap') {
+    return new Promise((resolve, reject) => {
+      const placeSearch = new AMap.PlaceSearch({ pageSize: 8, pageIndex: 1 });
+      placeSearch.search(query, (status, result) => {
+        if (status === 'complete' && result.info === 'OK' && result.poiList) {
+          resolve(result.poiList.pois.map(poi => ({
+            name: poi.name,
+            lat: poi.location.lat,
+            lon: poi.location.lng,
+            source: 'amap',
+            sub: [poi.address, poi.pname].filter(Boolean).join(' · ')
+          })));
+        } else {
+          resolve([]);
+        }
+      });
+    });
+  }
+  if (activeMapEngine === 'leaflet') {
+    const now = Date.now();
+    if (now - lastGeoSearch < 1000) return [];
+    lastGeoSearch = now;
+    const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=8&accept-language=zh-CN&q=${encodeURIComponent(query)}`);
+    if (!res.ok) return [];
+    const data = await res.json();
+    return data.map(item => ({
+      name: item.display_name.split(',')[0],
+      lat: Number(item.lat),
+      lon: Number(item.lon),
+      source: 'osm',
+      sub: item.display_name.split(',').slice(1, 3).join(',').trim()
+    }));
+  }
+  // 离线兜底
+  if (!localCities) await loadLocalCities();
+  return searchLocalCities(query).map(city => ({
+    name: cityLabel(city),
+    lat: Number(city.lat),
+    lon: Number(city.lon),
+    source: 'offline',
+    sub: `${city.ascii} · 人口约 ${Number(city.population || 0).toLocaleString('zh-CN')}`
+  }));
+}
+
+function renderCityResults(items) {
+  const results = document.getElementById('citySearchResults');
+  results.innerHTML = '';
+  if (!items.length) {
+    results.innerHTML = '<p>没有找到，请尝试城市全名或英文名。</p>';
+    return;
+  }
+  items.forEach(item => {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.innerHTML = `<strong>${escapeHtml(item.name)}</strong><small>${escapeHtml(item.sub || '')}</small>`;
+    button.addEventListener('click', () => {
+      document.querySelectorAll('#citySearchResults button').forEach(el => el.classList.remove('selected'));
+      button.classList.add('selected');
+      setSelectedCity(item);
+    });
+    results.appendChild(button);
+  });
 }
 
 function route(name, updateHash = true) {
@@ -59,12 +269,39 @@ function toLocalDateTimeInput(date = new Date()) {
 document.getElementById('eventAt').value = toLocalDateTimeInput();
 
 const uploadInput = document.querySelector('.upload-zone input');
-uploadInput.addEventListener('change', event => {
-  selectedFiles = [...event.target.files];
-  renderSelectedMedia();
-});
+uploadInput.addEventListener('change', event => appendFiles(event.target.files));
 
-function renderSelectedMedia() {
+function appendFiles(fileList) {
+  const files = [...fileList].filter(file => file.type.startsWith('image/'));
+  if (!files.length) return;
+  selectedFiles.push(...files);
+  uploadInput.value = '';
+  renderMediaEditor();
+  showToast(`共 ${selectedFiles.length} 张照片`);
+}
+
+function previewUrlFor(file) {
+  if (!file.previewUrl) file.previewUrl = URL.createObjectURL(file);
+  return file.previewUrl;
+}
+
+function moveMedia(from, to) {
+  if (from === to || from < 0 || to < 0 || from >= selectedFiles.length || to >= selectedFiles.length) return;
+  const [item] = selectedFiles.splice(from, 1);
+  selectedFiles.splice(to, 0, item);
+}
+
+function removeMedia(index) {
+  selectedFiles.splice(index, 1);
+  renderMediaEditor();
+}
+
+function setCover(index) {
+  moveMedia(index, 0);
+  renderMediaEditor();
+}
+
+function renderMediaEditor() {
   const container = document.getElementById('selectedMedia');
   container.innerHTML = '';
   if (!selectedFiles.length) {
@@ -76,22 +313,55 @@ function renderSelectedMedia() {
   container.classList.remove('hidden');
   selectedFiles.forEach((file, index) => {
     const thumb = document.createElement('div');
-    thumb.className = 'media-thumb';
-    thumb.style.backgroundImage = `url("${URL.createObjectURL(file)}")`;
-    thumb.innerHTML = `${index === 0 ? '<span>封面</span>' : ''}<button type="button" aria-label="移除照片">×</button>`;
-    thumb.querySelector('button').addEventListener('click', () => {
-      selectedFiles.splice(index, 1);
-      renderSelectedMedia();
-    });
+    thumb.className = index === 0 ? 'media-thumb is-cover' : 'media-thumb';
+    thumb.draggable = true;
+    thumb.style.backgroundImage = `url("${previewUrlFor(file)}")`;
+    const coverButton = document.createElement('button');
+    coverButton.type = 'button';
+    coverButton.className = 'media-set-cover';
+    coverButton.textContent = '设为封面';
+    coverButton.disabled = index === 0;
+    coverButton.addEventListener('click', () => setCover(index));
+    const removeButton = document.createElement('button');
+    removeButton.type = 'button';
+    removeButton.className = 'media-remove';
+    removeButton.textContent = '×';
+    removeButton.setAttribute('aria-label', '移除照片');
+    removeButton.addEventListener('click', () => removeMedia(index));
+    thumb.append(coverButton, removeButton);
+    attachDragHandlers(thumb, index);
     container.appendChild(thumb);
   });
   const add = document.createElement('label');
   add.className = 'media-add';
   add.textContent = '＋';
-  add.title = '重新选择照片';
+  add.title = '继续添加照片';
   add.addEventListener('click', () => uploadInput.click());
   container.appendChild(add);
-  showToast(`已选择 ${selectedFiles.length} 张照片`);
+}
+
+function attachDragHandlers(thumb, index) {
+  thumb.addEventListener('dragstart', event => {
+    event.dataTransfer.effectAllowed = 'move';
+    event.dataTransfer.setData('text/plain', String(index));
+    thumb.classList.add('dragging');
+  });
+  thumb.addEventListener('dragover', event => {
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'move';
+    thumb.classList.add('drag-over');
+  });
+  thumb.addEventListener('dragleave', () => thumb.classList.remove('drag-over'));
+  thumb.addEventListener('drop', event => {
+    event.preventDefault();
+    thumb.classList.remove('drag-over');
+    const from = Number(event.dataTransfer.getData('text/plain'));
+    if (!Number.isNaN(from) && from !== index) {
+      moveMedia(from, index);
+      renderMediaEditor();
+    }
+  });
+  thumb.addEventListener('dragend', () => thumb.classList.remove('dragging'));
 }
 
 document.querySelectorAll('.mood-picker button').forEach(button => button.addEventListener('click', event => {
@@ -214,7 +484,7 @@ function resetComposer() {
   document.querySelectorAll('.mood-picker button').forEach((button, index) => button.classList.toggle('selected', index === 0));
   document.querySelector('[data-screen="create"] h1').textContent = '记录此刻';
   uploadInput.value = '';
-  renderSelectedMedia();
+  renderMediaEditor();
 }
 
 function escapeHtml(value = '') {
@@ -381,10 +651,12 @@ const locationDialog = document.getElementById('locationDialog');
 let localCities = null;
 document.getElementById('openLocationPicker').addEventListener('click', async () => {
   locationDialog.showModal();
-  renderOfflineWorldMap(selectedCity);
-  if (!localCities) loadLocalCities().catch(() => {
-    document.getElementById('citySearchResults').innerHTML = '<p>城市库加载失败，请刷新页面后重试。</p>';
+  document.getElementById('citySearchResults').innerHTML = '';
+  initLocationMap().catch(() => {
+    activeMapEngine = 'offline';
+    initOfflinePicker();
   });
+  if (!localCities) loadLocalCities().catch(() => {});
 });
 document.getElementById('closeLocationPicker').addEventListener('click', () => locationDialog.close());
 
@@ -429,19 +701,9 @@ document.getElementById('citySearchForm').addEventListener('submit', async event
   const query = document.getElementById('citySearchInput').value.trim();
   if (!query) return showToast('请输入城市名称');
   const results = document.getElementById('citySearchResults');
-  results.innerHTML = '<p>正在本地城市库中寻找…</p>';
+  results.innerHTML = '<p>正在搜索…</p>';
   try {
-    if (!localCities) await loadLocalCities();
-    const cities = searchLocalCities(query);
-    results.innerHTML = '';
-    if (!cities.length) results.innerHTML = '<p>没有找到，请尝试城市全名或英文名。</p>';
-    cities.forEach(city => {
-      const button = document.createElement('button');
-      button.type = 'button';
-      button.innerHTML = `<strong>${escapeHtml(cityLabel(city))}</strong><small>${escapeHtml(city.ascii)} · 人口约 ${Number(city.population || 0).toLocaleString('zh-CN')}</small>`;
-      button.addEventListener('click', () => selectCity(city, button));
-      results.appendChild(button);
-    });
+    renderCityResults(await searchCitiesOnline(query));
   } catch (error) {
     results.innerHTML = `<p>${escapeHtml(error.message)}，请稍后重试。</p>`;
   }
@@ -449,10 +711,8 @@ document.getElementById('citySearchForm').addEventListener('submit', async event
 
 function selectCity(city, button) {
   document.querySelectorAll('#citySearchResults button').forEach(item => item.classList.remove('selected'));
-  button.classList.add('selected');
-  selectedCity = { name: cityLabel(city), lat: Number(city.lat), lon: Number(city.lon) };
-  renderOfflineWorldMap(selectedCity);
-  document.getElementById('confirmLocation').disabled = false;
+  if (button) button.classList.add('selected');
+  setSelectedCity({ name: cityLabel(city), lat: Number(city.lat), lon: Number(city.lon), source: 'offline' });
 }
 
 document.getElementById('confirmLocation').addEventListener('click', () => {

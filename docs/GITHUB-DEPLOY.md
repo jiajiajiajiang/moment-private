@@ -30,8 +30,11 @@
 - Repository variable：`SUPABASE_URL`
 - Repository secret：`SUPABASE_PUBLISHABLE_KEY`
 - Repository secret：`OWNER_EMAIL`
+- Repository secret（可选）：`AMAP_KEY`
 
 `OWNER_EMAIL` 会进入最终浏览器配置，因此不能被当作真正秘密；使用单独的、不公开用于联络的邮箱可以减少账户标识暴露。密码永远不要加入 GitHub 设置或源码。
+
+`AMAP_KEY` 是可选的高德地图 Web 端 key，仅在访问者位于东八区时才会启用国内高德瓦片地图与 POI 搜索；未配置时中国大陆用户将自动使用 Leaflet + OpenStreetMap 作为在线地图，或者在完全断网时回落至内置离线城市库。申请方式：访问 https://lbs.amap.com/api/javascript-api-v2/guide/abc/prepare 注册开发者账号，创建“Web端(JS API)”类型的应用，复制安全密钥/Key 填入 Secret 即可。注意不要使用 Android/iOS 端 Key，也不要在此 Key 上绑定域名白名单（GitHub Pages 自定义域名可能无法匹配）。
 
 ## 三、开启 GitHub Pages
 
