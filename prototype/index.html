@@ -4,13 +4,12 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#f7f5f2">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net https://webapi.amap.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://cdn.jsdelivr.net https://*.supabase.co https://*.amap.com https://tile.openstreetmap.org https://*.openstreetmap.org; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://restapi.amap.com https://nominatim.openstreetmap.org; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'; upgrade-insecure-requests">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://cdn.jsdelivr.net https://*.supabase.co; connect-src 'self' https://*.supabase.co wss://*.supabase.co; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'; upgrade-insecure-requests">
   <title>片刻 Moment — 私人记忆空间</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600&family=Noto+Serif+SC:wght@500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css">
 </head>
 <body>
   <div class="prototype-note">私人记忆空间 · 登录后数据实时保存</div>
@@ -91,7 +90,7 @@
             <input type="file" accept="image/jpeg,image/png,image/webp" multiple hidden>
             <span class="upload-icon">＋</span><strong>添加照片</strong><small>JPG、PNG、WEBP · 支持多选</small>
           </label>
-          <div class="selected-media hidden" id="selectedMedia"></div>
+          <div class="selected-media hidden" id="selectedMedia"><div class="media-thumb photo-sunset"><span>封面</span></div><div class="media-thumb photo-window"><button aria-label="移除">×</button></div><label class="media-add">＋</label></div>
           <label class="field story-field"><span>此刻在想什么？</span><textarea id="memoryContent" rows="7" placeholder="写下发生的事情，也写下当时的自己……"></textarea></label>
           <div class="form-grid">
             <label class="field"><span>事件时间</span><input id="eventAt" type="datetime-local"></label>
@@ -189,7 +188,6 @@
   <dialog id="shareDialog" class="small-dialog"><div><h2>分享记忆摘要</h2><p class="muted">只分享下方文字，不会暴露原图地址、账户或私人数据库。</p><textarea id="shareSummary" class="share-summary" readonly></textarea><div class="share-actions"><button id="copyShareSummary" class="primary-action">复制摘要</button><button id="systemShareSummary">打开系统分享</button><button id="downloadShareSummary">下载文字</button><button id="closeShareDialog">取消</button></div></div></dialog>
   <div class="toast" role="status" aria-live="polite"></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4/dist/umd/supabase.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js" defer></script>
   <script src="config.js"></script>
   <script src="app.js"></script>
 </body>

@@ -3,6 +3,5 @@
 window.MOMENT_CONFIG = {
   supabaseUrl: 'YOUR_SUPABASE_URL',
   supabasePublishableKey: 'YOUR_SUPABASE_PUBLISHABLE_KEY',
-  ownerEmail: 'YOUR_PRIVATE_OWNER_EMAIL',
-  amapKey: 'YOUR_AMAP_KEY'
+  ownerEmail: 'YOUR_PRIVATE_OWNER_EMAIL'
 };
